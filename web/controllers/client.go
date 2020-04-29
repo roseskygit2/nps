@@ -1,11 +1,11 @@
 package controllers
 
 import (
+	"ehang.io/nps/lib/common"
+	"ehang.io/nps/lib/file"
+	"ehang.io/nps/lib/rate"
+	"ehang.io/nps/server"
 	"github.com/astaxie/beego"
-	"github.com/cnlh/nps/lib/common"
-	"github.com/cnlh/nps/lib/file"
-	"github.com/cnlh/nps/lib/rate"
-	"github.com/cnlh/nps/server"
 )
 
 type ClientController struct {
@@ -60,10 +60,6 @@ func (s *ClientController) Add() {
 				InletFlow:  0,
 				FlowLimit:  int64(s.GetIntNoErr("flow_limit")),
 			},
-		}
-		if t.RateLimit > 0 {
-			t.Rate = rate.NewRate(int64(t.RateLimit * 1024))
-			t.Rate.Start()
 		}
 		if err := file.GetDb().NewClient(t); err != nil {
 			s.AjaxErr(err.Error())

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"ehang.io/nps/lib/common"
+	"ehang.io/nps/lib/crypt"
+	"ehang.io/nps/lib/file"
+	"ehang.io/nps/server"
 	"github.com/astaxie/beego"
-	"github.com/cnlh/nps/lib/common"
-	"github.com/cnlh/nps/lib/crypt"
-	"github.com/cnlh/nps/lib/file"
-	"github.com/cnlh/nps/server"
 )
 
 type BaseController struct {
@@ -22,6 +22,7 @@ type BaseController struct {
 
 //初始化参数
 func (s *BaseController) Prepare() {
+	s.Data["web_base_url"] = beego.AppConfig.String("web_base_url")
 	controllerName, actionName := s.GetControllerAndAction()
 	s.controllerName = strings.ToLower(controllerName[0 : len(controllerName)-10])
 	s.actionName = strings.ToLower(actionName)
@@ -32,10 +33,13 @@ func (s *BaseController) Prepare() {
 	timestamp := s.GetIntNoErr("timestamp")
 	configKey := beego.AppConfig.String("auth_key")
 	timeNowUnix := time.Now().Unix()
-	if !((math.Abs(float64(timeNowUnix-int64(timestamp))) <= 20) && (crypt.Md5(configKey+strconv.Itoa(timestamp)) == md5Key)) {
+	if !(md5Key!="" && (math.Abs(float64(timeNowUnix-int64(timestamp))) <= 20) && (crypt.Md5(configKey+strconv.Itoa(timestamp)) == md5Key)) {
 		if s.GetSession("auth") != true {
-			s.Redirect("/login/index", 302)
+			s.Redirect(beego.AppConfig.String("web_base_url")+"/login/index", 302)
 		}
+	}else {
+		s.SetSession("isAdmin",true)
+		s.Data["isAdmin"] = true
 	}
 	if s.GetSession("isAdmin") != nil && !s.GetSession("isAdmin").(bool) {
 		s.Ctx.Input.SetData("client_id", s.GetSession("clientId").(int))
@@ -60,6 +64,7 @@ func (s *BaseController) Prepare() {
 
 //加载模板
 func (s *BaseController) display(tpl ...string) {
+	s.Data["web_base_url"] = beego.AppConfig.String("web_base_url")
 	var tplname string
 	if s.Data["menu"] == nil {
 		s.Data["menu"] = s.actionName
@@ -83,6 +88,7 @@ func (s *BaseController) display(tpl ...string) {
 
 //错误
 func (s *BaseController) error() {
+	s.Data["web_base_url"] = beego.AppConfig.String("web_base_url")
 	s.Layout = "public/layout.html"
 	s.TplName = "public/error.html"
 }
